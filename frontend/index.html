@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lịch Hẹn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">Lịch Hẹn</span>
+    </div>
+    <button class="btn-new" onclick="openAddDialog()">
+      <span>+</span> Thêm lịch hẹn
+    </button>
+    <nav class="mini-cal" id="miniCal"></nav>
+    <div class="upcoming-section">
+      <h4>Sắp tới</h4>
+      <div id="upcomingList" class="upcoming-list"></div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main-content">
+    <!-- Header bar -->
+    <header class="cal-header">
+      <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" onclick="navigate(-1)">‹</button>
+        <button class="nav-btn today-btn" onclick="goToToday()">Hôm nay</button>
+        <button class="nav-btn" id="nextBtn" onclick="navigate(1)">›</button>
+      </div>
+      <h2 class="current-period" id="currentPeriod"></h2>
+      <div class="view-switcher">
+        <button class="view-btn active" data-view="month" onclick="switchView('month')">Tháng</button>
+        <button class="view-btn" data-view="week" onclick="switchView('week')">Tuần</button>
+      </div>
+    </header>
+
+    <!-- Calendar grid -->
+    <div class="cal-container" id="calContainer"></div>
+  </main>
+</div>
+
+<!-- Add / Edit Dialog -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="apptModal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Thêm lịch hẹn</h3>
+      <button class="modal-close" onclick="closeAllModals()">✕</button>
+    </div>
+    <form id="apptForm" onsubmit="submitAppointment(event)">
+      <div class="form-group">
+        <label>Tên lịch hẹn <span class="req">*</span></label>
+        <input type="text" id="apptName" placeholder="Họp dự án, Khám bác sĩ..." required autocomplete="off">
+        <span class="field-error" id="nameError"></span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Bắt đầu <span class="req">*</span></label>
+          <input type="datetime-local" id="apptStart" required onchange="onStartChange()">
+        </div>
+        <div class="form-group">
+          <label>Kết thúc <span class="req">*</span></label>
+          <input type="datetime-local" id="apptEnd" required onchange="onEndChange()">
+        </div>
+      </div>
+      <span class="field-error" id="timeError"></span>
+      <div class="form-group">
+        <label>Địa điểm</label>
+        <input type="text" id="apptLocation" placeholder="Phòng họp, địa chỉ..." autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Ghi chú</label>
+        <textarea id="apptDesc" rows="2" placeholder="Mô tả thêm..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nhắc nhở</label>
+          <select id="apptReminder">
+            <option value="">Không nhắc</option>
+            <option value="5">5 phút trước</option>
+            <option value="10">10 phút trước</option>
+            <option value="15">15 phút trước</option>
+            <option value="30">30 phút trước</option>
+            <option value="60">1 giờ trước</option>
+            <option value="1440">1 ngày trước</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Màu sắc</label>
+          <div class="color-picker" id="colorPicker">
+            <div class="color-swatch active" data-color="#3B82F6" style="background:#3B82F6" onclick="selectColor(this)"></div>
+            <div class="color-swatch" data-color="#10B981" style="background:#10B981" onclick="selectColor(this)"></div>
+            <div class="color-swatch" data-color="#F59E0B" style="background:#F59E0B" onclick="selectColor(this)"></div>
+            <div class="color-swatch" data-color="#EF4444" style="background:#EF4444" onclick="selectColor(this)"></div>
+            <div class="color-swatch" data-color="#8B5CF6" style="background:#8B5CF6" onclick="selectColor(this)"></div>
+            <div class="color-swatch" data-color="#EC4899" style="background:#EC4899" onclick="selectColor(this)"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-ghost" onclick="closeAllModals()">Hủy</button>
+        <button type="submit" class="btn-primary" id="submitBtn">Lưu lịch hẹn</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Conflict Dialog -->
+<div class="modal-overlay" id="conflictOverlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>⚠ Xung đột lịch</h3>
+      <button class="modal-close" onclick="closeAllModals()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Bạn đã có lịch hẹn vào thời gian này:</p>
+      <div id="conflictList" class="conflict-list"></div>
+      <p class="hint-text">Chọn thời gian khác hoặc thay thế lịch cũ.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeAllModals()">Chọn thời gian khác</button>
+      <button class="btn-danger" onclick="forceCreate()">Thay thế lịch cũ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Group Meeting Dialog -->
+<div class="modal-overlay" id="groupOverlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>👥 Cuộc họp nhóm</h3>
+      <button class="modal-close" onclick="closeAllModals()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="groupMessage"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="createPersonalAppt()">Tạo riêng</button>
+      <button class="btn-primary" onclick="joinGroupMeeting()">Tham gia nhóm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Popup -->
+<div class="detail-popup" id="detailPopup">
+  <div class="detail-header">
+    <div class="detail-color" id="detailColor"></div>
+    <div class="detail-title-area">
+      <h4 id="detailName"></h4>
+      <span id="detailTime" class="detail-time"></span>
+    </div>
+    <button class="modal-close" onclick="closeDetail()">✕</button>
+  </div>
+  <div class="detail-body">
+    <div id="detailLocation" class="detail-row"></div>
+    <div id="detailDesc" class="detail-row"></div>
+    <div id="detailReminder" class="detail-row"></div>
+  </div>
+  <div class="detail-actions">
+    <button class="btn-ghost btn-sm" onclick="editAppointment()">✏ Sửa</button>
+    <button class="btn-danger btn-sm" onclick="deleteAppointment()">🗑 Xóa</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="api.js"></script>
+<script src="calendar.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
