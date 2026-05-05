@@ -39,8 +39,12 @@ public class Appointment
     [NotMapped]
     public int DurationMinutes => (int)(EndTime - StartTime).TotalMinutes;
 
+    public int? GroupMeetingId { get; set; }
+
     [ForeignKey("UserId")]
     public User? User { get; set; }
+    [ForeignKey("GroupMeetingId")]
+    public GroupMeeting? GroupMeeting { get; set; }
     public ICollection<Reminder> Reminders { get; set; } = new List<Reminder>();
 }
 
@@ -48,26 +52,9 @@ public class GroupMeeting
 {
     [Key]
     public int MeetingId { get; set; }
-    [Required, MaxLength(200)]
-    public string Name { get; set; } = "";
-    public int DurationMinutes { get; set; }
-    public DateTime StartTime { get; set; }
-    public DateTime EndTime { get; set; }
-    public int? CreatedBy { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public ICollection<GroupMeetingParticipant> Participants { get; set; } = new List<GroupMeetingParticipant>();
-}
-
-public class GroupMeetingParticipant
-{
-    public int MeetingId { get; set; }
-    public int UserId { get; set; }
-    public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
-
-    [ForeignKey("MeetingId")]
-    public GroupMeeting? Meeting { get; set; }
-    [ForeignKey("UserId")]
-    public User? User { get; set; }
+    public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
 }
 
 public class Reminder

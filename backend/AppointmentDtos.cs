@@ -63,8 +63,12 @@ public class GroupMeetingMatchResult
 {
     public bool HasMatch { get; set; }
     public int? MeetingId { get; set; }
+    public int? MatchedAppointmentId { get; set; }
     public string? MeetingName { get; set; }
     public int ParticipantCount { get; set; }
+    public DateTime? MeetingStart { get; set; }
+    public DateTime? MeetingEnd { get; set; }
+    public string? OrganizerName { get; set; }
 }
 
 public class CreateAppointmentResult

@@ -71,21 +71,8 @@ public class AppointmentService
         }
 
         // Check for group meeting match
-        var groupMatch = await FindGroupMeetingMatchAsync(dto.Name, dto.StartTime, dto.EndTime);
-        if (groupMatch.HasMatch && dto.JoinGroupMeeting && groupMatch.MeetingId.HasValue)
-        {
-            var exists = await _db.GroupMeetingParticipants
-                .AnyAsync(p => p.MeetingId == groupMatch.MeetingId && p.UserId == userId);
-            if (!exists)
-            {
-                _db.GroupMeetingParticipants.Add(new GroupMeetingParticipant
-                {
-                    MeetingId = groupMatch.MeetingId.Value,
-                    UserId = userId
-                });
-            }
-        }
-
+        var groupMatch = await FindGroupMeetingMatchAsync(userId, dto.Name, dto.Location, dto.StartTime, dto.EndTime);
+        
         // Group match found but user hasn't decided yet
         if (groupMatch.HasMatch && !dto.JoinGroupMeeting && !dto.ForceReplace)
         {
@@ -94,6 +81,32 @@ public class AppointmentService
                 Success = false,
                 GroupMeetingMatch = groupMatch
             };
+        }
+
+        int? finalGroupMeetingId = null;
+
+        if (groupMatch.HasMatch && dto.JoinGroupMeeting)
+        {
+            if (groupMatch.MeetingId.HasValue)
+            {
+                finalGroupMeetingId = groupMatch.MeetingId.Value;
+            }
+            else if (groupMatch.MatchedAppointmentId.HasValue)
+            {
+                // Mới chỉ có 1 lịch hẹn trước đó, giờ ta gom chúng thành Group
+                var newGroup = new GroupMeeting { CreatedAt = DateTime.UtcNow };
+                _db.GroupMeetings.Add(newGroup);
+                await _db.SaveChangesAsync(); // Sinh ID cho GroupMeeting
+
+                // Cập nhật lịch hẹn cũ
+                var matchedAppt = await _db.Appointments.FindAsync(groupMatch.MatchedAppointmentId.Value);
+                if (matchedAppt != null)
+                {
+                    matchedAppt.GroupMeetingId = newGroup.MeetingId;
+                }
+                
+                finalGroupMeetingId = newGroup.MeetingId;
+            }
         }
 
         // Create appointment
@@ -106,6 +119,7 @@ public class AppointmentService
             EndTime = dto.EndTime,
             Description = dto.Description?.Trim(),
             Color = dto.Color,
+            GroupMeetingId = finalGroupMeetingId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -191,21 +205,44 @@ public class AppointmentService
         };
     }
 
-    public async Task<GroupMeetingMatchResult> FindGroupMeetingMatchAsync(string name, DateTime startTime, DateTime endTime)
+    public async Task<GroupMeetingMatchResult> FindGroupMeetingMatchAsync(int currentUserId, string name, string? location, DateTime startTime, DateTime endTime)
     {
-        int duration = (int)(endTime - startTime).TotalMinutes;
-        var match = await _db.GroupMeetings
-            .Include(g => g.Participants)
-            .Where(g => g.Name.ToLower() == name.ToLower().Trim()
-                && g.DurationMinutes == duration)
+        var nameLower = name.Trim().ToLower();
+        var locLower = (location ?? "").Trim().ToLower();
+
+        // Tìm lịch hẹn của người khác khớp chính xác: Tên + Địa điểm + Thời gian
+        var match = await _db.Appointments
+            .Include(a => a.User)
+            .Where(a => a.UserId != currentUserId 
+                     && a.Name.ToLower() == nameLower 
+                     && (a.Location ?? "").ToLower() == locLower
+                     && a.StartTime == startTime 
+                     && a.EndTime == endTime)
             .FirstOrDefaultAsync();
+
+        if (match == null)
+            return new GroupMeetingMatchResult { HasMatch = false };
+
+        int participantCount = 1; // Mặc định là 1 (người mà ta vừa match được)
+        if (match.GroupMeetingId.HasValue)
+        {
+            participantCount = await _db.Appointments
+                .Where(a => a.GroupMeetingId == match.GroupMeetingId)
+                .Select(a => a.UserId)
+                .Distinct()
+                .CountAsync();
+        }
 
         return new GroupMeetingMatchResult
         {
-            HasMatch = match != null,
-            MeetingId = match?.MeetingId,
-            MeetingName = match?.Name,
-            ParticipantCount = match?.Participants.Count ?? 0
+            HasMatch = true,
+            MeetingId = match.GroupMeetingId,
+            MatchedAppointmentId = match.AppointmentId,
+            MeetingName = match.Name,
+            ParticipantCount = participantCount,
+            MeetingStart = DateTime.SpecifyKind(match.StartTime, DateTimeKind.Utc),
+            MeetingEnd = DateTime.SpecifyKind(match.EndTime, DateTimeKind.Utc),
+            OrganizerName = match.User?.Username
         };
     }
 

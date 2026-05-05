@@ -136,3 +136,4 @@ C:\Users\Admin\Downloads\files_OOAD\backend\obj\Debug\net10.0\refint\CalendarApp
 C:\Users\Admin\Downloads\files_OOAD\backend\obj\Debug\net10.0\CalendarApp.pdb
 C:\Users\Admin\Downloads\files_OOAD\backend\obj\Debug\net10.0\CalendarApp.genruntimeconfig.cache
 C:\Users\Admin\Downloads\files_OOAD\backend\obj\Debug\net10.0\ref\CalendarApp.dll
+C:\Users\Admin\Downloads\files_OOAD\backend\obj\Debug\net10.0\CalendarApp.sourcelink.json

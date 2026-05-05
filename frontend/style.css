@@ -646,3 +646,39 @@ textarea { resize: vertical; }
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+/* ─── GROUP MEETING CARD (inside dialog) ─────────────── */
+.group-meeting-card {
+  background: linear-gradient(135deg, #EEF4FF 0%, #F0F9FF 100%);
+  border: 1px solid #BFDBFE;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.group-meeting-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1E3A8A;
+  margin-bottom: 10px;
+}
+.group-info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: #1E40AF;
+  margin-top: 5px;
+  line-height: 1.4;
+}
+.group-info-row span:first-child {
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: -1px;
+}
+.group-meeting-prompt {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+  margin-top: 0 !important;
+}
+

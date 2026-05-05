@@ -56,10 +56,50 @@ CREATE TABLE Reminders (
 INSERT INTO Users (Username, Email, PasswordHash)
 VALUES ('Demo User', 'demo@example.com', 'AQAAAAEAACcQAAAAEDemoHashForTesting==');
 
--- Seed demo group meeting
+-- ============================================================
+-- Seed 2 group meetings (dữ liệu giả mô phỏng sau ngày 8/5/2026)
+-- Người tổ chức là userId = 2 (người khác), userId = 1 được mời vào
+-- ============================================================
+
+-- Tạo user giả làm organizer (nếu chưa tồn tại)
+IF NOT EXISTS (SELECT 1 FROM Users WHERE UserId = 2)
+BEGIN
+    SET IDENTITY_INSERT Users ON;
+    INSERT INTO Users (UserId, Username, Email, PasswordHash)
+    VALUES (2, 'Nguyễn Văn An', 'an.nguyen@example.com', 'AQAAAAEAACcQAAAAEOrganizer2HashForTesting==');
+    SET IDENTITY_INSERT Users OFF;
+END
+GO
+
+-- Group Meeting 1: Họp lớp K21 — 10/5/2026, 09:00–11:00 (2 tiếng)
 INSERT INTO GroupMeetings (Name, DurationMinutes, StartTime, EndTime, CreatedBy)
-VALUES ('Weekly Team Standup', 30, 
-    DATEADD(day, 1, CAST(GETUTCDATE() AS DATETIME)),
-    DATEADD(minute, 30, DATEADD(day, 1, CAST(GETUTCDATE() AS DATETIME))),
-    1);
+VALUES (
+    N'Họp lớp K21',
+    120,
+    '2026-05-10 02:00:00',  -- 09:00 GMT+7
+    '2026-05-10 04:00:00',  -- 11:00 GMT+7
+    2
+);
+GO
+
+-- Group Meeting 2: Họp công ty Quý 2 — 15/5/2026, 14:00–15:30 (90 phút)
+INSERT INTO GroupMeetings (Name, DurationMinutes, StartTime, EndTime, CreatedBy)
+VALUES (
+    N'Họp công ty Quý 2',
+    90,
+    '2026-05-15 07:00:00',  -- 14:00 GMT+7
+    '2026-05-15 08:30:00',  -- 15:30 GMT+7
+    2
+);
+GO
+
+-- Thêm userId = 1 (Demo User) vào cả 2 cuộc họp với tư cách người được mời
+-- Meeting 1 — Họp lớp K21 (MeetingId = 1)
+INSERT INTO GroupMeetingParticipants (MeetingId, UserId)
+VALUES (1, 1);
+GO
+
+-- Meeting 2 — Họp công ty Quý 2 (MeetingId = 2)
+INSERT INTO GroupMeetingParticipants (MeetingId, UserId)
+VALUES (2, 1);
 GO

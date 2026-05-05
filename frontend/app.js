@@ -204,10 +204,35 @@ async function forceCreate() {
 
 // ─── GROUP MEETING DIALOG ──────────────────────────────
 function showGroupDialog(match) {
-  document.getElementById('groupMessage').textContent =
-    `Đã tìm thấy cuộc họp nhóm "${match.meetingName}" với thời lượng tương tự (${match.participantCount} người tham gia). Bạn muốn tham gia cuộc họp nhóm này không?`;
+  const startLocal = match.meetingStart ? new Date(match.meetingStart) : null;
+  const endLocal   = match.meetingEnd   ? new Date(match.meetingEnd)   : null;
+
+  const timeStr = (startLocal && endLocal)
+    ? `${formatDateTime(startLocal)} – ${formatTime(endLocal)}`
+    : '';
+
+  const organizerLine = match.organizerName
+    ? `<div class="group-info-row"><span>👤</span><span>Tổ chức bởi: <strong>${escHtml(match.organizerName)}</strong></span></div>`
+    : '';
+
+  const timeLine = timeStr
+    ? `<div class="group-info-row"><span>🕐</span><span>${escHtml(timeStr)}</span></div>`
+    : '';
+
+  const peopleLine = `<div class="group-info-row"><span>👥</span><span>${match.participantCount} người đang tham gia</span></div>`;
+
+  document.getElementById('groupMessage').innerHTML = `
+    <div class="group-meeting-card">
+      <div class="group-meeting-title">📅 ${escHtml(match.meetingName)}</div>
+      ${timeLine}
+      ${organizerLine}
+      ${peopleLine}
+    </div>
+    <p class="group-meeting-prompt">Tìm thấy lịch hẹn của người khác trùng khớp hoàn toàn về tên, thời gian và địa điểm.<br>Bạn có muốn tham gia chung vào nhóm này không?</p>
+  `;
   openModal('groupOverlay');
 }
+
 
 async function joinGroupMeeting() {
   if (!pendingDto) return;
@@ -297,9 +322,15 @@ async function showDetailById(id) {
 
 // ─── EDIT / DELETE ─────────────────────────────────────
 function editAppointment() {
-  if (!currentDetailAppt) return;
+  console.log("BEFORE:", currentDetailAppt);
+
+  const appt = currentDetailAppt;
+
   closeDetail();
-  openEditDialog(currentDetailAppt);
+
+  console.log("AFTER:", currentDetailAppt);
+
+  openEditDialog(appt);
 }
 
 async function deleteAppointment() {
