@@ -15,7 +15,7 @@ public class CalendarDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Appointment>()
-            .HasCheckConstraint("CHK_EndAfterStart", "[EndTime] > [StartTime]");
+            .ToTable(t => t.HasCheckConstraint("CHK_EndAfterStart", "[EndTime] > [StartTime]"));
 
         modelBuilder.Entity<Appointment>()
             .Property(a => a.Color)
